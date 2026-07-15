@@ -21,7 +21,8 @@ New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
   /target:exe `
   /platform:anycpu `
   /optimize+ `
-  /reference:System.Web.Extensions.dll `
+  /reference:System.IO.Compression.dll `
+  /reference:System.IO.Compression.FileSystem.dll `
   "/out:$OutFile" `
   $Source
 

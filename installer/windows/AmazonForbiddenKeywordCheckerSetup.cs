@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO.Compression;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Web.Script.Serialization;
 
 [assembly: AssemblyTitle("Amazon Forbidden Keyword Checker Setup")]
 [assembly: AssemblyDescription("Installer and updater for Amazon Forbidden Keyword Checker")]
@@ -15,25 +14,13 @@ using System.Web.Script.Serialization;
 
 namespace AmazonForbiddenKeywordCheckerSetup
 {
-    internal sealed class GitHubItem
-    {
-        public string type { get; set; }
-        public string path { get; set; }
-        public string url { get; set; }
-        public string download_url { get; set; }
-        public string content { get; set; }
-        public string encoding { get; set; }
-    }
-
     internal static class Program
     {
         private const string Repo = "ptrgiang/amazon-forbidden-keyword-checker";
         private const string Branch = "main";
-        private const string ApiRoot =
-            "https://api.github.com/repos/ptrgiang/amazon-forbidden-keyword-checker/contents/dist?ref=main";
+        private const string ArchiveUrl =
+            "https://codeload.github.com/ptrgiang/amazon-forbidden-keyword-checker/zip/refs/heads/main";
         private const string UserAgent = "AmazonForbiddenKeywordCheckerInstaller";
-
-        private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
 
         private static int Main(string[] args)
         {
@@ -66,8 +53,18 @@ namespace AmazonForbiddenKeywordCheckerSetup
 
                 try
                 {
-                    Console.WriteLine("Downloading extension files...");
-                    SaveGitHubDirectory(ApiRoot, tempDir);
+                    Console.WriteLine("Downloading extension ZIP...");
+                    string zipPath = Path.Combine(Path.GetTempPath(), "AmazonForbiddenKeywordChecker-" + Guid.NewGuid().ToString("N") + ".zip");
+                    try
+                    {
+                        DownloadArchive(zipPath);
+                        Console.WriteLine("Extracting extension files...");
+                        ExtractDist(zipPath, tempDir);
+                    }
+                    finally
+                    {
+                        TryDeleteFile(zipPath);
+                    }
                     ValidateInstall(tempDir);
 
                     Console.WriteLine("Installing update...");
@@ -103,53 +100,45 @@ namespace AmazonForbiddenKeywordCheckerSetup
             }
         }
 
-        private static void SaveGitHubDirectory(string apiUrl, string targetRoot)
-        {
-            GitHubItem[] items = GetJson<GitHubItem[]>(apiUrl);
-            foreach (GitHubItem item in items)
-            {
-                if (item == null) continue;
-                if (String.Equals(item.type, "dir", StringComparison.OrdinalIgnoreCase))
-                {
-                    SaveGitHubDirectory(item.url, targetRoot);
-                    continue;
-                }
-                if (!String.Equals(item.type, "file", StringComparison.OrdinalIgnoreCase)) continue;
-                if (String.IsNullOrWhiteSpace(item.path) || !item.path.StartsWith("dist/", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-                string relative = item.path.Substring("dist/".Length).Replace('/', Path.DirectorySeparatorChar);
-                string target = Path.Combine(targetRoot, relative);
-                string parent = Path.GetDirectoryName(target);
-                if (!String.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
-
-                Console.WriteLine("  " + relative);
-                SaveGitHubFile(item.url, target);
-            }
-        }
-
-        private static void SaveGitHubFile(string apiUrl, string target)
-        {
-            GitHubItem file = GetJson<GitHubItem>(apiUrl);
-            if (file == null || String.IsNullOrWhiteSpace(file.content))
-            {
-                throw new InvalidOperationException("Downloaded file content is empty: " + apiUrl);
-            }
-            if (!String.Equals(file.encoding, "base64", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Unsupported GitHub file encoding: " + file.encoding);
-            }
-            string cleanContent = file.content.Replace("\n", "").Replace("\r", "");
-            File.WriteAllBytes(target, Convert.FromBase64String(cleanContent));
-        }
-
-        private static T GetJson<T>(string url)
+        private static void DownloadArchive(string zipPath)
         {
             using (WebClient client = NewClient())
             {
-                string json = client.DownloadString(url);
-                return Json.Deserialize<T>(json);
+                client.DownloadFile(ArchiveUrl, zipPath);
+            }
+        }
+
+        private static void ExtractDist(string zipPath, string targetRoot)
+        {
+            int count = 0;
+            string root = Path.GetFullPath(targetRoot);
+            using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    string name = entry.FullName.Replace('\\', '/');
+                    int distIndex = name.IndexOf("/dist/", StringComparison.OrdinalIgnoreCase);
+                    if (distIndex < 0 || name.EndsWith("/", StringComparison.Ordinal)) continue;
+
+                    string relative = name.Substring(distIndex + "/dist/".Length);
+                    if (String.IsNullOrWhiteSpace(relative)) continue;
+
+                    string target = Path.GetFullPath(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));
+                    if (!target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("Blocked unsafe ZIP path: " + entry.FullName);
+                    }
+
+                    string parent = Path.GetDirectoryName(target);
+                    if (!String.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+                    Console.WriteLine("  " + relative.Replace('/', Path.DirectorySeparatorChar));
+                    entry.ExtractToFile(target, true);
+                    count += 1;
+                }
+            }
+            if (count == 0)
+            {
+                throw new InvalidOperationException("The downloaded ZIP did not contain a dist folder.");
             }
         }
 
@@ -157,7 +146,6 @@ namespace AmazonForbiddenKeywordCheckerSetup
         {
             WebClient client = new WebClient();
             client.Headers[HttpRequestHeader.UserAgent] = UserAgent;
-            client.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json";
             return client;
         }
 
@@ -212,6 +200,19 @@ namespace AmazonForbiddenKeywordCheckerSetup
             try
             {
                 Directory.Delete(dir, true);
+            }
+            catch
+            {
+                // Best effort cleanup only.
+            }
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            if (String.IsNullOrEmpty(path) || !File.Exists(path)) return;
+            try
+            {
+                File.Delete(path);
             }
             catch
             {
