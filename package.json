@@ -1,6 +1,6 @@
 {
   "name": "amazon-forbidden-keyword-checker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Chrome/Edge MV3 extension that detects Amazon-restricted keywords while you type. Fully local, no backend.",

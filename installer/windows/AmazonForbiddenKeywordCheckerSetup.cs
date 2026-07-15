@@ -10,8 +10,8 @@ using System.Web.Script.Serialization;
 [assembly: AssemblyDescription("Installer and updater for Amazon Forbidden Keyword Checker")]
 [assembly: AssemblyCompany("ptrgiang")]
 [assembly: AssemblyProduct("Amazon Forbidden Keyword Checker")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
 
 namespace AmazonForbiddenKeywordCheckerSetup
 {
