@@ -16,6 +16,22 @@ Everything runs locally in the browser. There is no backend, analytics, tracking
 
 ## Installation
 
+### Download The Windows Installer
+
+Download and run:
+
+```text
+AmazonForbiddenKeywordCheckerSetup.exe
+```
+
+The installer downloads the latest committed `dist/` files from GitHub and installs them to:
+
+```powershell
+$env:USERPROFILE\AmazonForbiddenKeywordChecker
+```
+
+Run the same `.exe` again to update. After updating, reload the unpacked extension in `chrome://extensions` or `edge://extensions`.
+
 ### Download With Windows PowerShell
 
 Open PowerShell and run:
@@ -66,11 +82,12 @@ $env:USERPROFILE\AmazonForbiddenKeywordChecker
 
 ```bash
 npm install
-npm run build
+npm run release
 npm test
 ```
 
 The production extension is emitted to `dist/`. This repository keeps `dist/` committed so non-technical users can download just that folder and load it directly.
+The Windows installer is emitted to `release/AmazonForbiddenKeywordCheckerSetup.exe`.
 
 Useful development commands:
 
@@ -221,10 +238,10 @@ Manual checks:
 
 Recommended source repository contents:
 
-- Commit source files, tests, `package.json`, `package-lock.json`, and `dist/`.
+- Commit source files, tests, `package.json`, `package-lock.json`, `dist/`, and `release/AmazonForbiddenKeywordCheckerSetup.exe`.
 - Do not commit `node_modules/` or generated `public/icons/`.
 - Use GitHub Actions CI in `.github/workflows/ci.yml` to verify pull requests and pushes.
-- Run `npm run build` before publishing so `dist/` matches the source.
+- Run `npm run release` before publishing so `dist/` and the Windows installer match the source.
 - Users who install with the PowerShell command should load the generated `AmazonForbiddenKeywordChecker` folder as the unpacked extension.
 
 No license file is included yet. Add one before publishing publicly if you want to grant open-source usage rights.
