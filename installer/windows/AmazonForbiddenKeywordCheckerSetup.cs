@@ -21,6 +21,8 @@ namespace AmazonForbiddenKeywordCheckerSetup
         public string path { get; set; }
         public string url { get; set; }
         public string download_url { get; set; }
+        public string content { get; set; }
+        public string encoding { get; set; }
     }
 
     internal static class Program
@@ -117,22 +119,29 @@ namespace AmazonForbiddenKeywordCheckerSetup
                 {
                     continue;
                 }
-                if (String.IsNullOrWhiteSpace(item.download_url))
-                {
-                    throw new InvalidOperationException("Missing download URL for " + item.path);
-                }
-
                 string relative = item.path.Substring("dist/".Length).Replace('/', Path.DirectorySeparatorChar);
                 string target = Path.Combine(targetRoot, relative);
                 string parent = Path.GetDirectoryName(target);
                 if (!String.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
 
                 Console.WriteLine("  " + relative);
-                using (WebClient client = NewClient())
-                {
-                    client.DownloadFile(item.download_url, target);
-                }
+                SaveGitHubFile(item.url, target);
             }
+        }
+
+        private static void SaveGitHubFile(string apiUrl, string target)
+        {
+            GitHubItem file = GetJson<GitHubItem>(apiUrl);
+            if (file == null || String.IsNullOrWhiteSpace(file.content))
+            {
+                throw new InvalidOperationException("Downloaded file content is empty: " + apiUrl);
+            }
+            if (!String.Equals(file.encoding, "base64", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Unsupported GitHub file encoding: " + file.encoding);
+            }
+            string cleanContent = file.content.Replace("\n", "").Replace("\r", "");
+            File.WriteAllBytes(target, Convert.FromBase64String(cleanContent));
         }
 
         private static T GetJson<T>(string url)
