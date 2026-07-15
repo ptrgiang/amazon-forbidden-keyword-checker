@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AFKC Docs annotated-canvas harness</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; }
+  .kix-canvas-tile-content { position: relative; display: block; margin: 60px auto; width: 700px; height: 300px; border: 1px solid #ccc; }
+</style>
+<script>
+(function () {
+  const store = {
+    'afkc.remoteKeywords': {
+      languages: ['English'],
+      keywords: [
+        { term: 'all natural', key: 'all natural', languages: ['English'] },
+        { term: 'cure cancer', key: 'cure cancer', languages: ['English'] }
+      ],
+      syncedAt: Date.now(), sourceUrl: 'stub', sourceHash: 'x', format: 'csv'
+    },
+    'afkc.localOverrides': { added: [], edits: { 'all natural': { key: 'all natural', replacement: 'plant-based' } }, extraLanguages: [] },
+    'afkc.settings': { mode: 'live', siteEnabled: {}, defaultSiteEnabled: true, selectedLanguages: null },
+    'afkc.syncStatus': { state: 'ok' }
+  };
+  window.chrome = {
+    storage: {
+      local: { get: (keys) => Promise.resolve(Object.fromEntries(keys.filter(k => k in store).map(k => [k, store[k]]))) },
+      onChanged: { addListener: () => {} }
+    },
+    runtime: { onMessage: { addListener: () => {} } }
+  };
+  // Make the content script believe it is on docs.google.com/document.
+  window.__afkcForceAdapter = 'google-docs';
+})();
+</script>
+</head>
+<body>
+<div class="kix-canvas-tile-content">
+  <svg width="700" height="300">
+    <rect aria-label="Our all natural formula helps everyone" data-font-css="400 16px Arial"
+          x="40" y="40" width="330" height="20" fill="none"></rect>
+    <rect aria-label="This product will cure cancer quickly" data-font-css="italic 700 16px Arial"
+          x="40" y="80" width="330" height="20" fill="none"></rect>
+    <rect aria-label="A perfectly clean sentence" data-font-css="400 16px Arial"
+          x="40" y="120" width="220" height="20" fill="none"></rect>
+  </svg>
+</div>
+<script src="../dist/content.js"></script>
+</body>
+</html>

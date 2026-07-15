@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AFKC content-script harness</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 720px; margin: 30px auto; }
+  textarea, input[type=text] { width: 100%; font-size: 14px; padding: 8px; margin: 8px 0; }
+  [contenteditable] { border: 1px solid #999; padding: 8px; min-height: 60px; margin: 8px 0; }
+</style>
+<script>
+// ---- chrome.* stub with seeded storage, defined BEFORE content.js ----
+(function () {
+  const store = {
+    'afkc.remoteKeywords': {
+      languages: ['English', 'Spanish'],
+      keywords: [
+        { term: 'all natural', key: 'all natural', languages: ['English'] },
+        { term: 'Alcohol', key: 'alcohol', languages: ['English', 'Spanish'] },
+        { term: 'allergies', key: 'allergies', languages: ['English'] },
+        { term: 'cure cancer', key: 'cure cancer', languages: ['English'] }
+      ],
+      syncedAt: Date.now(), sourceUrl: 'stub', sourceHash: 'x', format: 'csv'
+    },
+    'afkc.localOverrides': {
+      added: [],
+      edits: { 'alcohol': { key: 'alcohol', replacement: 'beverage' } },
+      extraLanguages: []
+    },
+    'afkc.settings': { mode: 'live', siteEnabled: {}, defaultSiteEnabled: true, selectedLanguages: null },
+    'afkc.syncStatus': { state: 'ok' }
+  };
+  window.chrome = {
+    storage: {
+      local: {
+        get: (keys) => Promise.resolve(Object.fromEntries(keys.filter(k => k in store).map(k => [k, store[k]])))
+      },
+      onChanged: { addListener: () => {} }
+    },
+    runtime: {
+      onMessage: { addListener: (f) => { window.__afkcOnMessage = f; } }
+    }
+  };
+})();
+</script>
+</head>
+<body>
+<h1>AFKC harness</h1>
+<label>Input: <input id="i1" type="text" placeholder="type here"></label>
+<label>Textarea:</label>
+<textarea id="t1" rows="4" placeholder="type here"></textarea>
+<label>Contenteditable:</label>
+<div id="ce1" contenteditable="true"></div>
+<p id="static">Static paragraph mentioning cure cancer for selection scan.</p>
+<script src="../dist/content.js"></script>
+</body>
+</html>

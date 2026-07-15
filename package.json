@@ -1,0 +1,32 @@
+{
+  "name": "amazon-forbidden-keyword-checker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome/Edge MV3 extension that detects Amazon-restricted keywords while you type. Fully local, no backend.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "icons": "node scripts/gen-icons.mjs",
+    "build:app": "vite build",
+    "build:content": "vite build --config vite.content.config.ts",
+    "build": "npm run icons && npm run build:app && npm run build:content",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "^5.5.4",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
+}
