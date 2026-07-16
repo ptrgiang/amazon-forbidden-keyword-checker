@@ -4,6 +4,7 @@ $Root = Split-Path -Parent $PSScriptRoot
 $Source = Join-Path $Root "installer\windows\AmazonForbiddenKeywordCheckerSetup.cs"
 $OutDir = Join-Path $Root "release"
 $OutFile = Join-Path $OutDir "AmazonForbiddenKeywordCheckerSetup.exe"
+$IconFile = Join-Path $OutDir "AmazonForbiddenKeywordCheckerSetup.ico"
 $Csc = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 
 if (!(Test-Path -LiteralPath $Csc)) {
@@ -15,6 +16,8 @@ if (!(Test-Path -LiteralPath $Csc)) {
 }
 
 New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
+node (Join-Path $Root "scripts\gen-icons.mjs")
+node (Join-Path $Root "scripts\gen-installer-icon.mjs")
 
 & $Csc `
   /nologo `
@@ -23,6 +26,7 @@ New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
   /optimize+ `
   /reference:System.IO.Compression.dll `
   /reference:System.IO.Compression.FileSystem.dll `
+  "/win32icon:$IconFile" `
   "/out:$OutFile" `
   $Source
 
